@@ -102,9 +102,10 @@ function renderTotal(d) {
 async function pollTotal() { try { renderTotal(await be.totals()); } catch (e) { console.warn(e); } }
 
 /* ---------- auth ---------- */
-function showSignedOut() { $("app").hidden = true; $("logout").hidden = true; $("loginCard").hidden = false; }
+function showSignedOut() { $("app").hidden = true; $("logout").hidden = true; $("signinTop").hidden = false; $("loginCard").hidden = false; }
+$("signinTop").addEventListener("click", () => { $("loginCard").scrollIntoView({ behavior: "smooth", block: "center" }); $("ident").focus({ preventScroll: true }); });
 async function showSignedIn() {
-  $("loginCard").hidden = true; $("app").hidden = false; $("logout").hidden = false;
+  $("signinTop").hidden = true; $("loginCard").hidden = true; $("app").hidden = false; $("logout").hidden = false;
   if (!$("day").value) $("day").value = localToday();
   $("day").max = localToday();
   await loadLog();
