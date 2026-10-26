@@ -1,0 +1,1 @@
+Bun.serve({ port: Number(process.env.PORT || 5173), fetch(r) { const p = new URL(r.url).pathname; const f = Bun.file("." + (p === "/" ? "/index.html" : p)); return f.exists().then(e => e ? new Response(f) : new Response("nf", { status: 404 })); } });

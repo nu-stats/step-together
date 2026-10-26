@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Step Together</title>
+<style>
+  :root {
+    --bg: #0b1220; --bg2: #101a2e; --card: #131f36; --line: #223152;
+    --text: #e8eefc; --muted: #8fa0c4; --accent: #34e0b4; --accent2: #5aa9ff; --danger: #ff6b81;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg: #f3f6fc; --bg2: #e6edfa; --card: #ffffff; --line: #d6dfef; --text: #14203a; --muted: #5d6f94;
+            --accent: #0fb58a; --accent2: #2f7de1; --danger: #d6405a; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; color: var(--text);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: radial-gradient(1200px 600px at 50% -10%, var(--bg2), var(--bg)) fixed; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 20px 16px 64px; }
+  header { display: flex; justify-content: space-between; align-items: center; padding: 8px 0 4px; }
+  .brand { font-weight: 700; letter-spacing: .02em; display: flex; align-items: center; gap: 10px; }
+  .brand .logo { width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--accent), var(--accent2)); font-size: 15px; }
+  button, input { font: inherit; color: inherit; }
+  .link { background: none; border: 0; color: var(--muted); cursor: pointer; padding: 6px 4px; }
+  .link:hover { color: var(--text); }
+
+  /* hero */
+  .hero { text-align: center; padding: 36px 0 28px; }
+  .eyebrow { color: var(--muted); font-size: 13px; letter-spacing: .18em; text-transform: uppercase;
+    display: flex; justify-content: center; align-items: center; gap: 8px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 0 var(--accent);
+    animation: pulse 2s infinite; }
+  @keyframes pulse { 70% { box-shadow: 0 0 0 9px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+  .ticker { position: relative; display: inline-block; margin: 10px 0 4px; }
+  .count { font-size: clamp(52px, 15vw, 110px); font-weight: 800; line-height: 1.05;
+    font-variant-numeric: tabular-nums; letter-spacing: -.02em;
+    background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text;
+    background-clip: text; color: transparent; }
+  .plus { position: absolute; right: -6px; top: -6px; color: var(--accent); font-weight: 700; opacity: 0;
+    transform: translateY(6px); pointer-events: none; }
+  .plus.show { animation: rise 1.8s ease-out; }
+  @keyframes rise { 0% { opacity: 0; transform: translateY(8px); } 15% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-26px); } }
+  .sub { color: var(--muted); }
+
+  .bar { position: relative; height: 22px; border-radius: 999px; background: var(--card);
+    border: 1px solid var(--line); overflow: hidden; margin: 26px 0 10px; }
+  .fill { height: 100%; width: 0; border-radius: 999px; transition: width 1.2s cubic-bezier(.2,.8,.2,1);
+    background: linear-gradient(90deg, var(--accent2), var(--accent)); position: relative; }
+  .fill::after { content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent);
+    transform: translateX(-100%); animation: shine 3s infinite; }
+  @keyframes shine { to { transform: translateX(100%); } }
+  .tick { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--line); opacity: .9; }
+  .barmeta { display: flex; justify-content: space-between; color: var(--muted); font-size: 14px; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 22px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 8px; }
+  .stat b { display: block; font-size: 22px; font-variant-numeric: tabular-nums; }
+  .stat span { color: var(--muted); font-size: 13px; }
+
+  /* cards */
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 20px; margin-top: 18px; }
+  .card h2 { margin: 0 0 4px; font-size: 18px; }
+  .hint { color: var(--muted); font-size: 14px; margin: 0 0 14px; }
+  form.row { display: flex; gap: 10px; flex-wrap: wrap; }
+  input { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 11px 14px; min-width: 0; }
+  input:focus { outline: 2px solid var(--accent2); outline-offset: 1px; }
+  .grow { flex: 1 1 180px; }
+  .btn { border: 0; border-radius: 12px; padding: 11px 20px; font-weight: 700; cursor: pointer; color: #04231b;
+    background: linear-gradient(135deg, var(--accent), var(--accent2)); }
+  .btn:hover { filter: brightness(1.08); }
+  .btn:disabled { opacity: .6; cursor: default; }
+  .msg { min-height: 20px; margin: 10px 0 0; font-size: 14px; color: var(--accent); }
+  .msg.err { color: var(--danger); }
+
+  .mine { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .mine .tot { color: var(--muted); font-size: 14px; }
+  .mine .tot b { color: var(--text); font-variant-numeric: tabular-nums; }
+  ul.log { list-style: none; margin: 12px 0 0; padding: 0; }
+  ul.log li { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); }
+  ul.log .d { flex: 1; }
+  ul.log .d small { color: var(--muted); display: block; font-size: 12px; }
+  ul.log .n { font-variant-numeric: tabular-nums; font-weight: 700; }
+  ul.log input { width: 120px; padding: 7px 10px; }
+  .icon { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 9px;
+    padding: 6px 10px; cursor: pointer; font-size: 13px; }
+  .icon:hover { color: var(--text); border-color: var(--muted); }
+  .icon.del:hover { color: var(--danger); border-color: var(--danger); }
+  .empty { color: var(--muted); text-align: center; padding: 18px 0 6px; }
+  [hidden] { display: none !important; }
+  footer { text-align: center; color: var(--muted); font-size: 13px; margin-top: 28px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="logo">&#128095;</span><span id="team">Step Together</span></div>
+    <button class="link" id="logout" hidden>Sign out</button>
+  </header>
+
+  <section class="hero">
+    <div class="eyebrow"><span class="dot"></span> Team steps so far</div>
+    <div class="ticker"><div class="count" id="count">0</div><div class="plus" id="plus"></div></div>
+    <div class="sub" id="goalline">&nbsp;</div>
+    <div class="bar" id="bar" role="progressbar" aria-label="Team progress toward goal"><div class="fill" id="fill"></div></div>
+    <div class="barmeta"><span id="pct">0%</span><span id="remain"></span></div>
+    <div class="stats">
+      <div class="stat"><b id="walkers">0</b><span>walkers</span></div>
+      <div class="stat"><b id="today">0</b><span>steps today</span></div>
+      <div class="stat"><b id="avg">0</b><span>avg per walker</span></div>
+    </div>
+  </section>
+
+  <!-- signed out -->
+  <section class="card" id="loginCard" hidden>
+    <h2>Join in</h2>
+    <p class="hint">Sign in with your email or phone number to log your steps. Nobody else can see your numbers.</p>
+    <form class="row" id="loginForm">
+      <input class="grow" id="ident" placeholder="Email or phone number" autocomplete="username" required>
+      <button class="btn" id="loginBtn">Send me a code</button>
+    </form>
+    <form class="row" id="codeForm" hidden>
+      <input class="grow" id="code" placeholder="6-digit code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" required>
+      <button class="btn" id="codeBtn">Sign in</button>
+      <button class="link" type="button" id="codeBack">Back</button>
+    </form>
+    <div class="msg" id="loginMsg"></div>
+  </section>
+
+  <!-- signed in -->
+  <section id="app" hidden>
+    <div class="card">
+      <h2>Add your steps</h2>
+      <p class="hint">One entry per day. Saving a day that already has steps replaces it.</p>
+      <form class="row" id="addForm">
+        <input type="date" id="day" required>
+        <input class="grow" type="number" id="steps" min="0" max="200000" step="1" inputmode="numeric" placeholder="Steps" required>
+        <button class="btn" id="addBtn">Save</button>
+      </form>
+      <div class="msg" id="addMsg"></div>
+    </div>
+
+    <div class="card">
+      <div class="mine"><h2>Your log</h2><div class="tot">Your total: <b id="myTotal">0</b></div></div>
+      <ul class="log" id="log"></ul>
+      <div class="empty" id="empty" hidden>No steps logged yet €” add your first day above.</div>
+    </div>
+  </section>
+
+  <footer><span id="demoBadge" hidden>Demo mode (sample data, saved only in this browser) · </span>Only the team total is shared. Your daily numbers stay private to you.</footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
+
