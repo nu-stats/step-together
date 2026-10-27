@@ -19,6 +19,13 @@ create table if not exists public.message_log (
 );
 alter table public.message_log enable row level security;
 
+-- Used by the edge function to detect 25/50/75/100% milestones. Not callable by site visitors.
+create or replace function public.total_through(d date)
+returns bigint language sql security definer set search_path = public as $$
+  select coalesce(sum(steps), 0) from public.steps where day <= d;
+$$;
+revoke all on function public.total_through(date) from public, anon, authenticated;
+
 -- Hourly trigger. Replace the two placeholders, then run this part LAST (after deploying the function).
 -- The function itself decides whether it is the 8 AM or 8 PM hour in your time zone, so daylight saving is handled.
 create extension if not exists pg_cron;

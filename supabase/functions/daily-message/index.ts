@@ -29,6 +29,23 @@ const QUOTES = [
   "Rain or shine, every step you add lifts the whole team.",
   "Be the reason the team total jumps today.",
   "Start where you are, use what you have, walk what you can.",
+  "One foot in front of the other. That's the whole secret.",
+  "Today's steps are tomorrow's energy.",
+  "You showed up yesterday. Do it again today.",
+  "Walk it off, walk it out, walk it up.",
+  "Every lap around the block is a win.",
+  "Your future self says thanks for walking today.",
+  "Slow and steady still gets there.",
+  "Take the long way. Your legs will thank you.",
+  "A good day starts with a good walk.",
+  "Stretch, step out, smile.",
+  "No excuses, just steps.",
+  "Take the stairs. Park far away. Every bit adds up.",
+  "Little by little, the team total climbs.",
+  "Walk with a friend today and double the fun.",
+  "Make today a 'yes, I walked' day.",
+  "Don't count the steps. Make the steps count.",
+  "The best workout is the one you actually do. Go for a walk!",
 ];
 
 const n = (x: number) => Math.round(x).toLocaleString("en-US");
@@ -87,7 +104,20 @@ Deno.serve(async (req) => {
   const hasLogged = new Set((logged ?? []).map((r) => r.user_id));
   const done = new Set((already ?? []).map((r) => r.user_id));
   const pct = Math.min(100, ((totals?.total ?? 0) / GOAL) * 100).toFixed(1);
-  const teamLine = `${TEAM} total: ${n(totals?.total ?? 0)} steps (${pct}% of goal).`;
+  // Milestone shout-out: did the team cross 25/50/75/100% of the goal since the last message?
+  const shift = (d: string, k: number) => new Date(new Date(d + "T00:00:00Z").getTime() + k * 864e5).toISOString().slice(0, 10);
+  const through = async (d: string) => Number((await sb.rpc("total_through", { d })).data ?? 0);
+  const [from, to] = kind === "morning" ? [shift(day, -2), shift(day, -1)] : [shift(day, -1), day];
+  const level = (t: number) => Math.min(4, Math.floor((t / GOAL) * 4));
+  const [before, after] = [level(await through(from)), level(await through(to))];
+  const MILESTONES: Record<number, string> = {
+    1: "The team just passed 25% of our goal, a quarter of the way there!",
+    2: "Halfway there! The team just hit 50% of our goal.",
+    3: "75% of the goal is done. The finish line is in sight!",
+    4: `GOAL REACHED! The team just hit ${n(GOAL)} steps. Amazing work, everyone!`,
+  };
+  const milestone = after > before ? MILESTONES[after] + "\n\n" : "";
+  const teamLine = `${milestone}${TEAM} total: ${n(totals?.total ?? 0)} steps (${pct}% of goal).`;
   const link = SITE ? `\n${SITE}` : "";
   const quote = QUOTES[Math.floor(new Date(day).getTime() / 86400000) % QUOTES.length];
 
