@@ -27,6 +27,11 @@ function supabaseBackend() {
       fail(await sb.from("steps").upsert({ user_id: session.user.id, day, steps }, { onConflict: "user_id,day" }));
     },
     async remove(day) { fail(await sb.from("steps").delete().eq("day", day)); },
+    async getNotify() { const r = fail(await sb.from("notify_prefs").select("enabled").maybeSingle()); return r ? r.enabled : true; },
+    async setNotify(enabled) {
+      const { data: { session } } = await sb.auth.getSession();
+      fail(await sb.from("notify_prefs").upsert({ user_id: session.user.id, enabled }, { onConflict: "user_id" }));
+    },
     async totals() { return fail(await sb.rpc("team_totals")); },
   };
 }
@@ -56,6 +61,8 @@ function demoBackend() {
       const r = rows.find((x) => x.day === day); r ? (r.steps = steps) : rows.push({ day, steps }); persist();
     },
     async remove(day) { rows = rows.filter((x) => x.day !== day); persist(); },
+    async getNotify() { return localStorage.getItem("demo-notify") !== "false"; },
+    async setNotify(enabled) { localStorage.setItem("demo-notify", enabled); },
     async totals() {
       const mine = rows.reduce((a, r) => a + r.steps, 0), tdy = rows.filter((r) => r.day === localToday()).reduce((a, r) => a + r.steps, 0);
       return { total: base.total + extra + mine, walkers: base.walkers + (rows.length ? 1 : 0), today: base.today + extra + tdy };
@@ -108,6 +115,7 @@ async function showSignedIn() {
   $("signinTop").hidden = true; $("loginCard").hidden = true; $("app").hidden = false; $("logout").hidden = false;
   if (!$("day").value) $("day").value = localToday();
   $("day").max = localToday();
+  $("notify").checked = await be.getNotify().catch(() => true);
   await loadLog();
 }
 const say = (id, text, err) => { $(id).textContent = text; $(id).className = "msg" + (err ? " err" : ""); };
@@ -178,6 +186,11 @@ $("addForm").addEventListener("submit", async (e) => {
     await loadLog(); pollTotal();
   } catch (err) { say("addMsg", err.message, true); }
   $("addBtn").disabled = false;
+});
+
+$("notify").addEventListener("change", async () => {
+  try { await be.setNotify($("notify").checked); say("addMsg", $("notify").checked ? "Daily messages are on." : "Daily messages are off."); }
+  catch (err) { $("notify").checked = !$("notify").checked; say("addMsg", err.message, true); }
 });
 
 /* ---------- boot ---------- */

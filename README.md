@@ -17,6 +17,37 @@ A static walking-step tracker for a group. Hosted free on GitHub Pages, with Sup
 
 Leave `SUPABASE_URL` empty in `config.js` to run the demo mode locally (sample data, demo code `123456`).
 
+## Daily messages (optional)
+
+- **7 AM:** a motivational message with the team total, by email or text depending on how each person signed up.
+- **8 PM:** a reminder to anyone who hasn't logged today, and a thank-you to anyone who has.
+- Times and time zone are secrets (`MORNING_HOUR`, `EVENING_HOUR`, `TZ_NAME`; default 7, 20, America/New_York). Daylight saving is handled.
+- Everyone can switch messages off with the checkbox on the page. Texts also honor "STOP".
+
+Setup:
+
+1. Run `notifications.sql` in the SQL Editor, but leave the last `cron.schedule` statement for step 5.
+2. **Email:** create a free Resend account (resend.com), verify a sending domain, and make an API key.
+3. **Text:** create a Twilio account, buy a number, and register it for US messaging (A2P 10DLC). Texting costs money, and US carriers require registration before they deliver. Email-only is free: skip this and phone users simply won't get messages.
+4. Install the Supabase CLI, then from this folder:
+
+   ```
+   supabase login
+   supabase link --project-ref YOUR-PROJECT-REF
+   supabase secrets set CRON_SECRET=pick-a-long-random-string FROM_EMAIL="Step Together <steps@yourdomain.com>" RESEND_API_KEY=... SITE_URL=https://nu-stats.github.io/step-together/ TEAM_NAME="Step Together" GOAL=1000000
+   supabase secrets set TWILIO_ACCOUNT_SID=... TWILIO_AUTH_TOKEN=... TWILIO_FROM=+15551234567
+   supabase functions deploy daily-message --no-verify-jwt
+   ```
+
+5. Put your project ref and the same `CRON_SECRET` into the `cron.schedule` block of `notifications.sql` and run it.
+6. Test without sending anything (shows who would get what):
+
+   ```
+   curl -H "x-cron-secret: YOUR-SECRET" "https://YOUR-PROJECT-REF.supabase.co/functions/v1/daily-message?kind=evening&dry=1"
+   ```
+
+The message wording lives in `supabase/functions/daily-message/index.ts` (the `QUOTES` list and the texts below it). Redeploy after editing.
+
 ## Preview locally
 
 ```
