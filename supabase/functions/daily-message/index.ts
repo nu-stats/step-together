@@ -1,5 +1,5 @@
 // Sends the morning motivation and the evening reminder/thank-you.
-// Email users get an email (Resend); phone users get a text (Twilio).
+// Everyone gets an email, sent through Brevo.
 // Called hourly by pg_cron; it only acts when the local hour matches and never sends twice a day.
 // Test without sending:  .../daily-message?kind=evening&dry=1   (send header x-cron-secret)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
@@ -66,28 +66,20 @@ async function sign(uid: string) {
 }
 
 async function sendEmail(to: string, subject: string, text: string, unsubUrl: string) {
-  const key = env("RESEND_API_KEY");
-  if (!key) throw new Error("RESEND_API_KEY not set");
-  const r = await fetch("https://api.resend.com/emails", {
+  const key = env("BREVO_API_KEY");
+  if (!key) throw new Error("BREVO_API_KEY not set");
+  const r = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "content-type": "application/json" },
-    body: JSON.stringify({ from: env("FROM_EMAIL"), to, subject, text, headers: { "List-Unsubscribe": `<${unsubUrl}>` } }),
+    headers: { "api-key": key, "content-type": "application/json", accept: "application/json" },
+    body: JSON.stringify({
+      sender: { name: env("FROM_NAME", TEAM), email: env("FROM_EMAIL") },
+      to: [{ email: to }],
+      subject,
+      textContent: text,
+      headers: { "List-Unsubscribe": `<${unsubUrl}>` },
+    }),
   });
-  if (!r.ok) throw new Error(`Resend ${r.status}: ${await r.text()}`);
-}
-
-async function sendSms(to: string, body: string) {
-  const sid = env("TWILIO_ACCOUNT_SID"), token = env("TWILIO_AUTH_TOKEN");
-  if (!sid || !token) throw new Error("Twilio secrets not set");
-  const form = new URLSearchParams({ To: to.startsWith("+") ? to : "+" + to, Body: body });
-  if (env("TWILIO_MESSAGING_SERVICE_SID")) form.set("MessagingServiceSid", env("TWILIO_MESSAGING_SERVICE_SID"));
-  else form.set("From", env("TWILIO_FROM"));
-  const r = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
-    method: "POST",
-    headers: { Authorization: "Basic " + btoa(`${sid}:${token}`), "content-type": "application/x-www-form-urlencoded" },
-    body: form,
-  });
-  if (!r.ok) throw new Error(`Twilio ${r.status}: ${await r.text()}`);
+  if (!r.ok) throw new Error(`Brevo ${r.status}: ${await r.text()}`);
 }
 
 Deno.serve(async (req) => {
@@ -134,8 +126,7 @@ Deno.serve(async (req) => {
     if (error) throw error;
     for (const u of data.users) {
       if (out.has(u.id) || done.has(u.id)) { result.skipped++; continue; }
-      const via = u.email ? "email" : u.phone ? "sms" : "";
-      if (!via) { result.skipped++; continue; }
+      if (!u.email) { result.skipped++; continue; }
 
       let subject: string, text: string;
       if (kind === "morning") {
@@ -149,22 +140,17 @@ Deno.serve(async (req) => {
         text = `Quick reminder: you haven't logged today's steps yet. It only takes a moment, and the team is counting on you!\n\n${teamLine}${link}`;
       }
       const unsubUrl = `${env("SUPABASE_URL")}/functions/v1/unsubscribe?u=${u.id}&t=${await sign(u.id)}`;
-      if (via === "sms") text += "\nReply STOP to opt out.";
-      else text += `\n\nUnsubscribe: ${unsubUrl}`;
+      text += `\n\nUnsubscribe: ${unsubUrl}`;
 
       try {
-        if (dry) result.preview.push(`${via}: ${text.replaceAll("\n", " | ")}`);
+        if (dry) result.preview.push(`${u.email}: ${subject} | ${text.replaceAll("\n", " | ")}`);
         else {
-          await (via === "email" ? sendEmail(u.email!, subject, text, unsubUrl) : sendSms(u.phone!, text));
+          await sendEmail(u.email, subject, text, unsubUrl);
           await sb.from("message_log").insert({ user_id: u.id, day, kind });
         }
         result.sent++;
       } catch (e) {
-        const msg = (e as Error).message;
-        // Twilio error 21610 = this number replied STOP. Remember it so we stop trying.
-        if (via === "sms" && msg.includes("21610")) {
-          await sb.from("notify_prefs").upsert({ user_id: u.id, enabled: false }, { onConflict: "user_id" });
-        } else result.failed.push(`${via}: ${msg}`);
+        result.failed.push(`${u.email}: ${(e as Error).message}`);
       }
     }
     if (data.users.length < 1000) break;

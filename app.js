@@ -8,14 +8,15 @@ const prettyDay = (s) => new Date(s + "T12:00:00").toLocaleDateString(undefined,
 function supabaseBackend() {
   const sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
   const fail = (r) => { if (r.error) throw new Error(r.error.message); return r.data; };
-  const target = (raw) => { const s = raw.trim(); return s.includes("@") ? { email: s } : { phone: normalizePhone(s) }; };
+  const email = (raw) => {
+    const s = raw.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s)) throw new Error("Please enter a valid email address.");
+    return s;
+  };
   return {
     demo: false,
-    async sendCode(raw) { fail(await sb.auth.signInWithOtp({ ...target(raw), options: { shouldCreateUser: true } })); },
-    async verify(raw, token) {
-      const t = target(raw);
-      fail(await sb.auth.verifyOtp({ ...t, token: token.trim(), type: t.email ? "email" : "sms" }));
-    },
+    async sendCode(raw) { fail(await sb.auth.signInWithOtp({ email: email(raw), options: { shouldCreateUser: true } })); },
+    async verify(raw, token) { fail(await sb.auth.verifyOtp({ email: email(raw), token: token.trim(), type: "email" })); },
     async signedIn() { return !!(await sb.auth.getSession()).data.session; },
     async signOut() { await sb.auth.signOut(); },
     async mine() {
@@ -29,11 +30,6 @@ function supabaseBackend() {
     async remove(day) { fail(await sb.from("steps").delete().eq("day", day)); },
     async totals() { return fail(await sb.rpc("team_totals")); },
   };
-}
-function normalizePhone(s) {
-  let d = s.replace(/\D/g, "");
-  if (d.length === 10) d = "1" + d;
-  return "+" + d;
 }
 
 function demoBackend() {
