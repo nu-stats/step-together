@@ -88,8 +88,6 @@
     padding: 6px 10px; cursor: pointer; font-size: 13px; }
   .icon:hover { color: var(--text); border-color: var(--muted); }
   .icon.del:hover { color: var(--danger); border-color: var(--danger); }
-  .opt { display: flex; gap: 10px; align-items: center; color: var(--muted); font-size: 14px; margin-top: 8px; cursor: pointer; }
-  .opt input { width: auto; min-width: 0; padding: 0; accent-color: var(--accent); }
   .empty { color: var(--muted); text-align: center; padding: 18px 0 6px; }
   [hidden] { display: none !important; }
   footer { text-align: center; color: var(--muted); font-size: 13px; margin-top: 28px; }
@@ -102,6 +100,8 @@
     <button class="link" id="logout" hidden>Sign out</button>
     <button class="btn" id="signinTop" hidden>Sign in</button>
   </header>
+
+  <div class="card" id="unsubBanner" hidden style="text-align:center">You're unsubscribed from the daily messages. You can still log steps anytime.</div>
 
   <section class="hero">
     <div class="eyebrow"><span class="dot"></span> Team steps so far</div>
@@ -142,9 +142,7 @@
         <input class="grow" type="number" id="steps" min="0" max="200000" step="1" inputmode="numeric" placeholder="Steps" required>
         <button class="btn" id="addBtn">Save</button>
       </form>
-      <div class="msg" id="addMsg"></div>
-      <label class="opt"><input type="checkbox" id="notify" checked> Send me the daily morning message and evening reminder</label>
-    </div>
+      <div class="msg" id="addMsg"></div>    </div>
 
     <div class="card">
       <div class="mine"><h2>Your log</h2><div class="tot">Your total: <b id="myTotal">0</b></div></div>

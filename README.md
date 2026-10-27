@@ -23,7 +23,7 @@ Leave `SUPABASE_URL` empty in `config.js` to run the demo mode locally (sample d
 - **8 PM:** a reminder to anyone who hasn't logged today, and a thank-you to anyone who has.
 - Times and time zone are secrets (`MORNING_HOUR`, `EVENING_HOUR`, `TZ_NAME`; default 8, 20, America/New_York). Daylight saving is handled.
 - When the team crosses 25%, 50%, 75% or 100% of the goal, the next message opens with a celebration line.
-- Everyone can switch messages off with the checkbox on the page. Texts also honor "STOP".
+- Opting out happens in the messages themselves: emails have an unsubscribe link, and texts honor "STOP". There is no setting on the page.
 
 Setup:
 
@@ -38,6 +38,7 @@ Setup:
    supabase secrets set CRON_SECRET=pick-a-long-random-string FROM_EMAIL="Step Together <steps@yourdomain.com>" RESEND_API_KEY=... SITE_URL=https://nu-stats.github.io/step-together/ TEAM_NAME="Step Together" GOAL=1000000
    supabase secrets set TWILIO_ACCOUNT_SID=... TWILIO_AUTH_TOKEN=... TWILIO_FROM=+15551234567
    supabase functions deploy daily-message --no-verify-jwt
+   supabase functions deploy unsubscribe --no-verify-jwt
    ```
 
 5. Put your project ref and the same `CRON_SECRET` into the `cron.schedule` block of `notifications.sql` and run it.

@@ -1,14 +1,11 @@
 -- Run once in Supabase SQL Editor, after schema.sql.
 
--- Each person can switch the daily messages off (the page has a checkbox for this).
+-- People who opted out (via the email unsubscribe link or by texting STOP). Only the edge functions touch it.
 create table if not exists public.notify_prefs (
-  user_id uuid primary key default auth.uid() references auth.users(id) on delete cascade,
+  user_id uuid primary key references auth.users(id) on delete cascade,
   enabled boolean not null default true
 );
 alter table public.notify_prefs enable row level security;
-create policy "read own prefs"   on public.notify_prefs for select using (auth.uid() = user_id);
-create policy "insert own prefs" on public.notify_prefs for insert with check (auth.uid() = user_id);
-create policy "update own prefs" on public.notify_prefs for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- Prevents double-sending. Only the edge function (service role) can touch it.
 create table if not exists public.message_log (

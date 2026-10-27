@@ -58,13 +58,20 @@ function localNow() {
   return { day: `${p.year}-${p.month}-${p.day}`, hour: Number(p.hour) };
 }
 
-async function sendEmail(to: string, subject: string, text: string) {
+// Signed so nobody can unsubscribe someone else by guessing an id.
+async function sign(uid: string) {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(env("CRON_SECRET")), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(uid));
+  return [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function sendEmail(to: string, subject: string, text: string, unsubUrl: string) {
   const key = env("RESEND_API_KEY");
   if (!key) throw new Error("RESEND_API_KEY not set");
   const r = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "content-type": "application/json" },
-    body: JSON.stringify({ from: env("FROM_EMAIL"), to, subject, text }),
+    body: JSON.stringify({ from: env("FROM_EMAIL"), to, subject, text, headers: { "List-Unsubscribe": `<${unsubUrl}>` } }),
   });
   if (!r.ok) throw new Error(`Resend ${r.status}: ${await r.text()}`);
 }
@@ -141,17 +148,23 @@ Deno.serve(async (req) => {
         subject = `Don't forget to log your steps`;
         text = `Quick reminder: you haven't logged today's steps yet. It only takes a moment, and the team is counting on you!\n\n${teamLine}${link}`;
       }
+      const unsubUrl = `${env("SUPABASE_URL")}/functions/v1/unsubscribe?u=${u.id}&t=${await sign(u.id)}`;
       if (via === "sms") text += "\nReply STOP to opt out.";
+      else text += `\n\nUnsubscribe: ${unsubUrl}`;
 
       try {
         if (dry) result.preview.push(`${via}: ${text.replaceAll("\n", " | ")}`);
         else {
-          await (via === "email" ? sendEmail(u.email!, subject, text) : sendSms(u.phone!, text));
+          await (via === "email" ? sendEmail(u.email!, subject, text, unsubUrl) : sendSms(u.phone!, text));
           await sb.from("message_log").insert({ user_id: u.id, day, kind });
         }
         result.sent++;
       } catch (e) {
-        result.failed.push(`${via}: ${(e as Error).message}`);
+        const msg = (e as Error).message;
+        // Twilio error 21610 = this number replied STOP. Remember it so we stop trying.
+        if (via === "sms" && msg.includes("21610")) {
+          await sb.from("notify_prefs").upsert({ user_id: u.id, enabled: false }, { onConflict: "user_id" });
+        } else result.failed.push(`${via}: ${msg}`);
       }
     }
     if (data.users.length < 1000) break;
