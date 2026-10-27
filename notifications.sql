@@ -20,7 +20,7 @@ create table if not exists public.message_log (
 alter table public.message_log enable row level security;
 
 -- Hourly trigger. Replace the two placeholders, then run this part LAST (after deploying the function).
--- The function itself decides whether it is the 7 AM or 8 PM hour in your time zone, so daylight saving is handled.
+-- The function itself decides whether it is the 8 AM or 8 PM hour in your time zone, so daylight saving is handled.
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
 

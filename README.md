@@ -19,9 +19,9 @@ Leave `SUPABASE_URL` empty in `config.js` to run the demo mode locally (sample d
 
 ## Daily messages (optional)
 
-- **7 AM:** a motivational message with the team total, by email or text depending on how each person signed up.
+- **8 AM:** a motivational message with the team total, by email or text depending on how each person signed up.
 - **8 PM:** a reminder to anyone who hasn't logged today, and a thank-you to anyone who has.
-- Times and time zone are secrets (`MORNING_HOUR`, `EVENING_HOUR`, `TZ_NAME`; default 7, 20, America/New_York). Daylight saving is handled.
+- Times and time zone are secrets (`MORNING_HOUR`, `EVENING_HOUR`, `TZ_NAME`; default 8, 20, America/New_York). Daylight saving is handled.
 - Everyone can switch messages off with the checkbox on the page. Texts also honor "STOP".
 
 Setup:

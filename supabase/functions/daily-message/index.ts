@@ -6,7 +6,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
 const env = (k: string, d = "") => Deno.env.get(k) ?? d;
 const TZ = env("TZ_NAME", "America/New_York");
-const MORNING_HOUR = Number(env("MORNING_HOUR", "7"));
+const MORNING_HOUR = Number(env("MORNING_HOUR", "8"));
 const EVENING_HOUR = Number(env("EVENING_HOUR", "20"));
 const TEAM = env("TEAM_NAME", "Step Together");
 const SITE = env("SITE_URL");
