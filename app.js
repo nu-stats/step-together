@@ -116,7 +116,7 @@ $("loginForm").addEventListener("submit", async (e) => {
   try {
     await be.sendCode($("ident").value);
     $("loginForm").hidden = true; $("codeForm").hidden = false; $("code").focus();
-    say("loginMsg", be.demo ? "Demo mode: enter code 123456." : "We sent you a code — enter it below.");
+    say("loginMsg", be.demo ? "Demo mode: enter code 123456." : "We sent you a code. Enter it below.");
   } catch (err) { say("loginMsg", err.message, true); }
   $("loginBtn").disabled = false;
 });
